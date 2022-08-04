@@ -1,4 +1,4 @@
-# Vehicle-Make-and-Model-Recognition
+# Vehicle-Make-and-Model-Recognition (VMMR)
 
 ## Data
 Data used here is freely available from the following sources:
@@ -15,6 +15,10 @@ training images folder `car_train` be placed in `StanfordCars`.
 
 ## Description
 This task is an example of **Fine-Grained image Classification**.
+
+Two popular VMMR datasets, Stanford Cars and VMMRdb, were unified for this undertaking. This was to ensure adequate 
+amounts of training data. Especially from the VMMRdb data, images are of varying qualities and taken from multiple
+view angles; hopefully this will allow for greater generalization ability of the trained network.
 
 ## References
 -[VMMRdb](https://github.com/faezetta/VMMRdb)

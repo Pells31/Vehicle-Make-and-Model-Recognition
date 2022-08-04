@@ -48,24 +48,53 @@ def preprocess_images(dir):
                     print("Preprocessed " + str(count) + " pictures")
 
 
+def create_stanford_df():
+    cars_meta = loadmat("Data/StanfordCars/car_devkit/devkit/cars_meta.mat")
+    cars_annos = loadmat("Data/StanfordCars/cars_annos.mat")
+
+    annos = []
+    class_names = []
+
+    for anno in cars_annos["annotations"]:
+        for field in anno:
+            annos.append([field[0].item(0).replace("car_ims/", " "), field[5].item(0)])
+
+    for class_name in cars_annos["class_names"]:
+        for field in class_name:
+            class_names.append(field[0])
+
+    df_classnames = pd.DataFrame(class_names, columns=["ClassName"])
+    df_annos = pd.DataFrame(annos, columns=['Filename', "ClassID"])
+    df_annos["ClassID"] = df_annos["ClassID"] - 1
+
+    df_merged = pd.merge(df_classnames, df_annos, left_index=True, right_on="ClassID")
+    df_merged = df_merged.drop(["ClassID"], axis=1)
+    return df_merged
+
+
+def create_vmmrdb_df():
+    data_list = []
+    for root, dirs, files in os.walk("Data/Processed/VMMRdb", topdown=False):
+        classname = root.replace("Data/Processed/VMMRdb/", "")
+        classname = classname.replace("_", " ")
+        classname = classname.title()
+        for file in files:
+            data_list.append([classname, file])
+
+    df = pd.DataFrame(data_list, columns=["ClassName", "Filename"])
+    df = df[:-1]
+    return df
+
+
 def main():
     # dataset = "StanfordCars"
     # preprocess_images(dataset)
     # dataset = "VMMRdb"
     # preprocess_images(dataset)
 
-    cars_meta = loadmat("Data/StanfordCars/car_devkit/devkit/cars_meta.mat")
-    cars_train_annos = loadmat("Data/StanfordCars/car_devkit/devkit/cars_train_annos.mat")
-    cars_test_annos = loadmat("Data/StanfordCars/car_devkit/devkit/cars_test_annos_withlabels.mat")
-    print(cars_meta)
-
-    for anno in cars_train_annos['annotations']:
-        for field in anno:
-            print(str(field[4]) + " " + str(field[5]))
-
-    for anno in cars_test_annos['annotations']:
-        for field in anno:
-            print(str(field[4]) + " " + str(field[5]))
+    df_stanford = create_stanford_df()
+    df_vmmrdb = create_vmmrdb_df()
+    df = pd.concat([df_stanford, df_vmmrdb], ignore_index=True)
 
 
 if __name__ == "__main__":
