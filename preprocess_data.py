@@ -57,13 +57,13 @@ def create_stanford_df():
 
     for anno in cars_annos["annotations"]:
         for field in anno:
-            annos.append([field[0].item(0).replace("car_ims/", " "), field[5].item(0)])
+            annos.append([field[0].item(0).replace("car_ims/", ""), field[5].item(0)])
 
     for class_name in cars_annos["class_names"]:
         for field in class_name:
             class_names.append(field[0])
 
-    df_classnames = pd.DataFrame(class_names, columns=["ClassName"])
+    df_classnames = pd.DataFrame(class_names, columns=["Classname"])
     df_annos = pd.DataFrame(annos, columns=['Filename', "ClassID"])
     df_annos["ClassID"] = df_annos["ClassID"] - 1
 
@@ -81,20 +81,23 @@ def create_vmmrdb_df():
         for file in files:
             data_list.append([classname, file])
 
-    df = pd.DataFrame(data_list, columns=["ClassName", "Filename"])
+    df = pd.DataFrame(data_list, columns=["Classname", "Filename"])
     df = df[:-1]
     return df
 
 
-def main():
-    # dataset = "StanfordCars"
-    # preprocess_images(dataset)
-    # dataset = "VMMRdb"
-    # preprocess_images(dataset)
-
+def create_unified_df():
     df_stanford = create_stanford_df()
     df_vmmrdb = create_vmmrdb_df()
     df = pd.concat([df_stanford, df_vmmrdb], ignore_index=True)
+    return df
+
+
+def main():
+    dataset = "StanfordCars"
+    # preprocess_images(dataset)
+    # dataset = "VMMRdb"
+    # preprocess_images(dataset)
 
 
 if __name__ == "__main__":
