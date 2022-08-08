@@ -13,6 +13,7 @@ Data used here is freely available from the following sources:
 - Scikit-Image
 - Torch
 - Torchvision
+- tqdm
 
 ## Installation
 Download all the above described data sources and place them each in its appropriate folder. For example, the downloaded
