@@ -6,14 +6,16 @@ import torch
 from torch import optim
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset, DataLoader, Subset
 from torchvision import models, transforms
 from torchvision.io import read_image, write_jpeg
 
 from skimage import io
+from sklearn.model_selection import train_test_split
 from preprocess_data import create_unified_df, create_stanford_df, create_vmmrdb_df, preprocess_images
 
-import os, copy
+import os
+import copy
 
 from tqdm import tqdm
 
@@ -27,6 +29,7 @@ class CarsDataset(Dataset):
         self.df = df
         self.root_dir = root_dir
         self.transform = transform
+        self.labels = df.iloc[:, 4]
 
     def __len__(self):
         return len(self.df)
@@ -38,7 +41,6 @@ class CarsDataset(Dataset):
         if self.df.iloc[idx, 2] == "StanfordCars":
             filepath = self.root_dir + "StanfordCars/car_ims"
         else:
-            # TODO
             filepath = self.root_dir + "VMMRdb/" + self.df.iloc[idx, 3]
 
         filepath = os.path.join(filepath,
@@ -144,11 +146,10 @@ def test_accuracy(data_loaders, model):
             num_correct += (preds == labels).sum()
             total += labels.size(0)
 
-    print(f"Test Accuracy of the model: {float(num_correct)/float(total)*100:.2f}")
+    print(f"Test Accuracy of the model: {float(num_correct) / float(total) * 100:.2f}")
 
 
 def main():
-    # Arguments
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--epochs", type=int, default=100, help="number of training epochs")
     parser.add_argument("-b", "--batchsize", type=int, default=64, help="batch size")
@@ -165,17 +166,19 @@ def main():
                                root_dir="Data/Processed/",
                                transform=image_transforms)
 
-    train_size = int(0.8 * len(full_dataset))
-    valid_size = int((len(full_dataset) - train_size) / 2)
-    test_size = len(full_dataset) - train_size - valid_size
+    # Generate indices instead of using actual data
+    train_indcs, valid_indcs, _, _ = train_test_split(range(len(full_dataset)),
+                                               full_dataset.labels,
+                                               test_size=0.2,
+                                               stratify=full_dataset.labels)
 
-    train_dataset, valid_dataset, test_dataset = torch.utils.data.random_split(full_dataset,
-                                                                               [train_size, valid_size, test_size])
+    # generate subset based on indices
+    train_split = Subset(full_dataset, train_indcs)  # 0.9
+    valid_split = Subset(full_dataset, valid_indcs)
 
     batch_size = args["batchsize"]
-    dataloaders = {"train": DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=4),
-                   "val": DataLoader(valid_dataset, batch_size=batch_size, shuffle=True, num_workers=4),
-                   "test": DataLoader(test_dataset, batch_size=batch_size, shuffle=True, num_workers=4)}
+    dataloaders = {"train": DataLoader(train_split, batch_size=batch_size, shuffle=True, num_workers=4),
+                   "val": DataLoader(valid_split, batch_size=batch_size, shuffle=True, num_workers=4)}
 
     model_name = "resnet"
     model, weights = initialize_model(model_name, num_classes, feature_extract=True)
