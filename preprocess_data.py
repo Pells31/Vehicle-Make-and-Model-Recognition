@@ -26,12 +26,12 @@ def resize(filepath, size=224):
     return result
 
 
-def preprocess_images(dir, dataset):
-    orig_dir_path = "Data/" + dir
+def preprocess_images(dataset_dir):
+    orig_dir_path = "Data/" + dataset_dir
 
     not_saved = []
 
-    if dataset == "VMMRdb":
+    if dataset_dir == "VMMRdb":
         for root, dirs, files in tqdm(os.walk(orig_dir_path, topdown=False)):
             for file in files:
                 # Only process pictures
@@ -162,5 +162,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-    # df_grouped = df.groupby(["Classname"]).count()

@@ -167,18 +167,31 @@ def main():
                                transform=image_transforms)
 
     # Generate indices instead of using actual data
-    train_indcs, valid_indcs, _, _ = train_test_split(range(len(full_dataset)),
-                                               full_dataset.labels,
-                                               test_size=0.2,
-                                               stratify=full_dataset.labels)
+    train_val_indcs, test_indcs, _, _ = train_test_split(range(len(full_dataset)),
+                                                         full_dataset.labels,
+                                                         test_size=0.1,
+                                                         stratify=full_dataset.labels)
 
     # generate subset based on indices
-    train_split = Subset(full_dataset, train_indcs)  # 0.9
-    valid_split = Subset(full_dataset, valid_indcs)
+    train_val_split = Subset(full_dataset, train_val_indcs)  # 0.9
+
+    train_val_split_labels = [label for _, label in train_val_split]
+
+    train_indcs, val_indcs, _, _ = train_test_split(range(len(train_val_split)),
+                                                    train_val_split_labels,
+                                                    test_size=0.111,
+                                                    stratify=train_val_split_labels)
+
+    train_split = Subset(full_dataset, train_indcs)  # 0.8
+    val_split = Subset(full_dataset, val_indcs)  # 0.1
+    test_split = Subset(full_dataset, test_indcs)  # 0.1
+
+    # TODO: Code to check the above sequence is creating the proper splits/class distribution
 
     batch_size = args["batchsize"]
     dataloaders = {"train": DataLoader(train_split, batch_size=batch_size, shuffle=True, num_workers=4),
-                   "val": DataLoader(valid_split, batch_size=batch_size, shuffle=True, num_workers=4)}
+                   "val": DataLoader(val_split, batch_size=batch_size, shuffle=True, num_workers=4),
+                   "test": DataLoader(test_split, batch_size=batch_size, shuffle=True, num_workers=4)}
 
     model_name = "resnet"
     model, weights = initialize_model(model_name, num_classes, feature_extract=True)
@@ -189,7 +202,7 @@ def main():
 
     num_epochs = args["epochs"]
     best_model = train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=num_epochs)
-    torch.save(best_model.state_dict(), "models/resnet50_10epochs.pt")
+    torch.save(best_model.state_dict(), "models/resnet50_" + str(num_epochs) + "epochs" + ".pt")
 
     test_accuracy(dataloaders, model)
 

@@ -34,7 +34,7 @@ def main():
     num_classes = df["Classname"].nunique()
 
     model, _ = initialize_model(model_name, num_classes, feature_extract=True)
-    model.load_state_dict(torch.load("models/resnet50_10epochs.pt", map_location=device))
+    model.load_state_dict(torch.load("models/" + str(model_name), map_location=device))
     model.eval()
 
     with torch.no_grad():
