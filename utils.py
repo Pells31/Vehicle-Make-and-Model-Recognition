@@ -20,5 +20,5 @@ def plot_loss_curves(train_losses, train_accs, val_losses, val_accs, model_name)
     ax[1].legend()
 
     f.suptitle(f'{model_name} - Loss/Accuracy Curves - {epochs} Epochs')
-    plt.savefig("metrics/" + model_name + "_" + str(len(epochs)) + "epochs" + ".png")
+    plt.savefig("imgs/metrics/" + model_name + "_" + str(len(epochs)) + "epochs" + ".png")
     plt.show()

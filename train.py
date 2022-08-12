@@ -214,8 +214,8 @@ def main():
                                            transforms.RandomHorizontalFlip(),
                                            transforms.RandomRotation(15),
                                            transforms.ToTensor(),
-                                           transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5)),
-                                           transforms.ColorJitter(brightness=.5, hue=.3),
+                                           # transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5)),
+                                           # transforms.ColorJitter(brightness=.5, hue=.3),
                                            normalize])
 
     valid_test_transforms = transforms.Compose([transforms.Resize((256, 256)),

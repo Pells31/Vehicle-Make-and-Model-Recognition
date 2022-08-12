@@ -10,21 +10,12 @@ from train import initialize_model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-p", "--path", type=str, help="path to image")
-    parser.add_argument("-m", "--model", type=str, help="model name")
-    parser.add_argument("-k", "--topk", type=int, help="top k predictions")
-    args = vars(parser.parse_args())
-
-    path = args["path"]
-    model_name = args["model"]
-    k = args["topk"]
+def predict(file, model_name="resnet50", k=5):
 
     img_transforms = transforms.Compose([transforms.ToTensor(),
                                          transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
 
-    img = io.imread(path)
+    img = io.imread(file)
     img = img_transforms(img)
     img = img.to(device)
     img = img.unsqueeze(0)  # Add batch dimension (because single image)
@@ -48,6 +39,21 @@ def main():
     class_encoded_matches = pd.merge(df, preds, how="inner")
     classname_matches = class_encoded_matches["Classname"].unique()
 
+    return classname_matches
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-p", "--path", type=str, help="path to image")
+    parser.add_argument("-m", "--model", type=str, help="model name")
+    parser.add_argument("-k", "--topk", type=int, help="top k predictions")
+    args = vars(parser.parse_args())
+
+    path = args["path"]
+    model_name = args["model"]
+    k = args["topk"]
+
+    classname_matches = predict(path, model_name, k)
     print(classname_matches)
 
 
