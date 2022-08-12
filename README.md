@@ -2,10 +2,10 @@
 
 ## Data
 Data used here is freely available from the following sources:
--[VMMRdb](https://www.dropbox.com/s/uwa7c5uz7cac7cw/VMMRdb.zip?dl=0)
--[Stanford Cars (Training)](http://ai.stanford.edu/~jkrause/car196/cars_train.tgz)
--[Stanford Cars (Test)](http://ai.stanford.edu/~jkrause/car196/cars_test.tgz)
--[Stanford Cars (Labels and Bounding Boxes)] (http://ai.stanford.edu/~jkrause/cars/car_devkit.tgz)
+- [VMMRdb](https://www.dropbox.com/s/uwa7c5uz7cac7cw/VMMRdb.zip?dl=0)
+- [Stanford Cars (Training)](http://ai.stanford.edu/~jkrause/car196/cars_train.tgz)
+- [Stanford Cars (Test)](http://ai.stanford.edu/~jkrause/car196/cars_test.tgz)
+- [Stanford Cars (Labels and Bounding Boxes)](http://ai.stanford.edu/~jkrause/cars/car_devkit.tgz)
 
 ## Dependencies
 - Numpy
@@ -38,8 +38,9 @@ Stratified sampling was used...
 Data augmentation was used...
 
 ## References
--[VMMRdb](https://github.com/faezetta/VMMRdb)
+- [VMMRdb](https://github.com/faezetta/VMMRdb)
 - Linjie Yang, Ping Luo, Chen Change Loy, Xiaoou Tang. "A Large-Scale Car Dataset for Fine-Grained Categorization
 and Verification", In Computer Vision and Pattern Recognition (CVPR), 2015.
 - [CS231n Transfer Learning Notes](https://cs231n.github.io/transfer-learning/)
 - [Pytorch Data Loading Tutorial](https://pytorch.org/tutorials/beginner/data_loading_tutorial.html)
+- [Streamlit webapp example](https://github.com/Joshmantova/Eagle-Vision)
