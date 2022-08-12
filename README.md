@@ -33,7 +33,9 @@ view angles; hopefully this will allow for greater generalization ability of the
 
 The VMMRdb dataset had many classes with few datapoints. These classes and associated samples were removed.
 
-Stratified sampling?
+Stratified sampling was used...
+
+Data augmentation was used...
 
 ## References
 -[VMMRdb](https://github.com/faezetta/VMMRdb)
