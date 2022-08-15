@@ -1,19 +1,14 @@
 import argparse
 import time
 
-import pandas as pd
-import numpy as np
 import torch
 from torch import optim
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
 from torchvision import models
 
-from imblearn.over_sampling import RandomOverSampler
-
-import os
 from tqdm import tqdm
-from copy import copy, deepcopy
+from copy import deepcopy
 
 from preprocess_data import create_stanford_df, create_vmmrdb_df, create_unified_df, create_dataloaders
 from utils import plot_loss_curves
@@ -28,13 +23,16 @@ def initialize_model(model_name, num_classes, feature_extract=True):
         weights = models.ResNet152_Weights.DEFAULT
         model = models.resnet152(weights=weights)
 
-    if model_name == "resnet50":
+    elif model_name == "resnet50":
         weights = models.ResNet50_Weights.DEFAULT  # Init with the best available weights
         model = models.resnet50(weights=weights)
 
-    if model_name == "resnet34":
+    elif model_name == "resnet34":
         weights = models.ResNet34_Weights.DEFAULT
         model = models.resnet34(weights=weights)
+
+    else:
+        raise Exception("Backbone model not recognized.")
 
     set_parameter_requires_grad(model, feature_extract)
 
@@ -134,10 +132,12 @@ def main():
     df_stanford = create_stanford_df()
     df_vmmrdb = create_vmmrdb_df(min_examples=100)
     df, num_classes = create_unified_df(df_stanford, df_vmmrdb)
+    print(f'df created!')
     print(f'num_classes: {num_classes}')
 
     model_name = args["model"]
     model, weights = initialize_model(model_name, num_classes, feature_extract=False)
+    print(f'model initialized!')
 
     lr = args["learning_rate"]
     criterion = nn.CrossEntropyLoss()
@@ -147,6 +147,8 @@ def main():
     num_epochs = args["epochs"]
     batch_size = args["batchsize"]
     dataloaders = create_dataloaders(df, batch_size)
+    print(f'dataloaders created!')
+
     best_model, train_losses, train_accs, val_losses, val_accs = \
         train_model(model, model_name, dataloaders, criterion, optimizer, scheduler, num_epochs)
 

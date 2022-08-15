@@ -193,8 +193,6 @@ def create_dataloaders(df, batch_size=32):
         "test": DataLoader(test_split, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
     }
 
-    df.to_pickle("Data/dataloaders.pkl")
-
     return dataloaders
 
 
