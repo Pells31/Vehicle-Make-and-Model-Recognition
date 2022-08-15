@@ -7,83 +7,20 @@ import torch
 from torch import optim
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
-from torch.utils.data import Dataset, DataLoader, Subset
-from torchvision import models, transforms
+from torchvision import models
 
-from PIL import Image
-
-from sklearn.model_selection import train_test_split
 from imblearn.over_sampling import RandomOverSampler
 
 import os
 from tqdm import tqdm
 from copy import copy, deepcopy
 
+from preprocess_data import create_stanford_df, create_vmmrdb_df, create_unified_df, create_dataloaders
 from utils import plot_loss_curves
 
 INPUT_SIZE = 224
 cudnn.benchmark = True
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-
-class CarsDataset(Dataset):
-    def __init__(self, df, root_dir, transform=None):
-        self.df = df
-        self.root_dir = root_dir
-        self.transform = transform
-        self.labels = df.loc[:, "Classencoded"]
-
-    def __len__(self):
-        return len(self.df)
-
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-
-        if type(idx) is np.ndarray:
-            idx = idx.item()
-
-        if self.df.iloc[idx, 2] == "StanfordCars":
-            filepath = self.root_dir + "StanfordCars/car_ims"
-        else:
-            filepath = self.root_dir + "VMMRdb/" + self.df.iloc[idx, 3]
-
-        filepath = os.path.join(filepath, self.df.iloc[idx, 1])
-        image = Image.open(filepath)
-
-        # If greyscale, convert to RGB
-        if image.mode == "L":
-            image = image.convert(mode="RGB")
-
-        label = self.df.loc[self.df.index[idx], "Classencoded"]
-        label = torch.tensor(label)
-
-        if self.transform:
-            image = self.transform(image)
-
-        return image, label
-
-
-class Subset(Dataset):
-    r"""
-    Subset of a dataset at specified indices.
-
-    Arguments:
-        dataset (Dataset): The whole Dataset
-        indices (sequence): Indices in the whole set selected for subset
-    """
-
-    def __init__(self, dataset, indices, transform=None):
-        self.dataset = dataset
-        self.indices = indices
-        self.transform = transform
-
-    def __getitem__(self, idx):
-        im, labels = self.dataset[self.indices[idx]]
-        return self.transform(im), labels
-
-    def __len__(self):
-        return len(self.indices)
 
 
 def initialize_model(model_name, num_classes, feature_extract=True):
@@ -186,27 +123,6 @@ def train_model(model, model_name, data_loaders, criterion, optimizer, scheduler
     return model, train_losses, train_accs, val_losses, val_accs
 
 
-def test_accuracy(data_loaders, model):
-    num_correct = 0
-    total = 0
-    model.eval()
-
-    with torch.no_grad():
-        for inputs, labels in data_loaders["test"]:
-            inputs = inputs.to(device)
-            labels = labels.to(device)
-            outputs = model(inputs)
-            _, preds = torch.max(outputs, 1)
-
-            print(preds.size())
-            print(labels.size())
-
-            num_correct += (preds == labels).sum()
-            total += labels.size(0)
-
-    print(f"Test Accuracy of the model: {float(num_correct) / float(total) * 100:.2f}")
-
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-e", "--epochs", type=int, default=100, help="number of training epochs")
@@ -215,61 +131,10 @@ def main():
     parser.add_argument("-lr", "--learning_rate", type=float, help="learning rate")
     args = vars(parser.parse_args())
 
-    df = pd.read_pickle("Data/preprocessed_data.pkl")
-    df.reset_index(drop=True, inplace=True)
-    num_classes = df["Classname"].nunique()
+    df_stanford = create_stanford_df()
+    df_vmmrdb = create_vmmrdb_df(min_examples=100)
+    df, num_classes = create_unified_df(df_stanford, df_vmmrdb)
     print(f'num_classes: {num_classes}')
-
-    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-
-    train_transforms = transforms.Compose([transforms.Resize((256, 256)),
-                                           transforms.RandomHorizontalFlip(),
-                                           transforms.RandomRotation(15),
-                                           transforms.ToTensor(),
-                                           transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5)),
-                                           transforms.ColorJitter(brightness=.5, hue=.3),
-                                           normalize])
-
-    valid_test_transforms = transforms.Compose([transforms.Resize((256, 256)),
-                                                transforms.ToTensor(),
-                                                normalize])
-
-    full_dataset = CarsDataset(df=df,
-                               root_dir="Data/")
-
-    # Generate indices instead of using actual data
-    train_val_indcs, test_indcs, _, _ = train_test_split(range(len(full_dataset)),
-                                                         full_dataset.labels,
-                                                         test_size=0.1,
-                                                         stratify=full_dataset.labels)
-
-    # generate subset based on indices
-    train_val_split = Subset(full_dataset, train_val_indcs, transform=None)  # 0.9
-
-    train_val_split_labels = []
-    for idx in train_val_indcs:
-        train_val_split_labels.append(full_dataset.labels[idx])
-
-    train_indcs, val_indcs, train_labels, val_labels = train_test_split(range(len(train_val_split)),
-                                                                        train_val_split_labels,
-                                                                        test_size=0.111,
-                                                                        stratify=train_val_split_labels)
-
-    # Oversampling training set
-    ros = RandomOverSampler()
-    train_resampled_indcs, _ = ros.fit_resample(np.array(train_indcs).reshape(-1, 1), train_labels)
-
-    train_split = Subset(full_dataset, train_resampled_indcs, train_transforms)  # 0.8
-    val_split = Subset(full_dataset, val_indcs, valid_test_transforms)  # 0.1
-    test_split = Subset(full_dataset, test_indcs, valid_test_transforms)  # 0.1
-
-    # TODO: Code to check the above sequence is creating the proper splits/class distribution
-
-    batch_size = args["batchsize"]
-    dataloaders = {
-        "train": DataLoader(train_split, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True),
-        "val": DataLoader(val_split, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True),
-        "test": DataLoader(test_split, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)}
 
     model_name = args["model"]
     model, weights = initialize_model(model_name, num_classes, feature_extract=False)
@@ -280,12 +145,12 @@ def main():
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
     num_epochs = args["epochs"]
+    batch_size = args["batchsize"]
+    dataloaders = create_dataloaders(df, batch_size)
     best_model, train_losses, train_accs, val_losses, val_accs = \
-        train_model(model, model_name, dataloaders, criterion, optimizer, scheduler, num_epochs=num_epochs)
+        train_model(model, model_name, dataloaders, criterion, optimizer, scheduler, num_epochs)
 
     plot_loss_curves(train_losses, train_accs, val_losses, val_accs, model_name)
-
-    test_accuracy(dataloaders, model)
 
 
 if __name__ == "__main__":
