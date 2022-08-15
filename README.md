@@ -27,15 +27,23 @@ output dimension (random weight initialization); and treat the ConvNet as a fixe
 pretrained features are similar enough to our vehicle dataset, and therefore we can train on top of the network (as
 opposed to at a stage earlier in the network, where learned features are more general).
 
-Two popular VMMR datasets, Stanford Cars and VMMRdb, were unified for this undertaking. This was to ensure adequate 
+Two popular VMMR datasets, **Stanford Cars** and **VMMRdb**, were unified for this undertaking. This was to ensure adequate 
 amounts of training data. Especially from the VMMRdb data, images are of varying qualities and taken from multiple
 view angles; hopefully this will allow for greater generalization ability of the trained network.
 
 The VMMRdb dataset had many classes with few datapoints. These classes and associated samples were removed.
 
-Stratified sampling was used...
+**Stratified Sampling** was used in order to ensure the training, validation, and test sets have equal proportions of
+samples of each target class. This is especially important because the dataset suffers from imbalance.
 
-Data augmentation was used...
+**Data Augmentation** was used in order to synthetically increase the amount of training data per class. 
+
+## Future Work
+- To improve the system, further data could be acquired in order to increase the number of classes that the model is
+trained on. This would allow for a more comprehensive vehicle recognition system, able to identify many more makes
+and models.
+- Additional data augmentation transformations could be implemented (possibly with pre-computation) to allow training
+on classes which inherently have an insufficient number of training examples.
 
 ## References
 - [VMMRdb](https://github.com/faezetta/VMMRdb)
