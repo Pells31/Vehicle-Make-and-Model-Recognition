@@ -2,6 +2,7 @@ import pandas as pd
 import os
 from scipy.io import loadmat
 from tqdm import tqdm
+from imblearn.over_sampling import RandomOverSampler
 
 
 def create_stanford_df():
@@ -56,12 +57,20 @@ def create_vmmrdb_df(min_examples=30):
 def main():
 
     df_stanford = create_stanford_df()
-    df_vmmrdb = create_vmmrdb_df(min_examples=24)
+    df_vmmrdb = create_vmmrdb_df(min_examples=100)
 
     df = pd.concat([df_stanford, df_vmmrdb], ignore_index=True)
 
     # Encode labels (for compatibility with Torch)
     df["Classencoded"] = df["Classname"].factorize()[0]
+
+    df_class_count = df.groupby(by=["Classencoded"]).count()
+    df_class_count = df.sort_values(by=["Classname"])
+
+    # print(f"df length: {len(df)}")
+    # ros = RandomOverSampler()
+    # df_resampled, _ = ros.fit_resample(df, df["Classencoded"])
+    # print(f"df_resampled length: {len(df_resampled)}")
 
     df.to_pickle("Data/preprocessed_data.pkl")
 

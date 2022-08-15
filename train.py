@@ -11,7 +11,9 @@ from torch.utils.data import Dataset, DataLoader, Subset
 from torchvision import models, transforms
 
 from PIL import Image
+
 from sklearn.model_selection import train_test_split
+from imblearn.over_sampling import RandomOverSampler
 
 import os
 from tqdm import tqdm
@@ -37,6 +39,9 @@ class CarsDataset(Dataset):
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
+
+        if type(idx) is np.ndarray:
+            idx = idx.item()
 
         if self.df.iloc[idx, 2] == "StanfordCars":
             filepath = self.root_dir + "StanfordCars/car_ims"
@@ -110,7 +115,7 @@ def set_parameter_requires_grad(model, feature_extracting=True):
             param.requires_grad = False
 
 
-def train_model(model, data_loaders, criterion, optimizer, scheduler, num_epochs=100):
+def train_model(model, model_name, data_loaders, criterion, optimizer, scheduler, num_epochs=100):
     since = time.time()
     best_acc = 0.0
     train_losses = []
@@ -167,6 +172,8 @@ def train_model(model, data_loaders, criterion, optimizer, scheduler, num_epochs
                 if epoch_acc > best_acc:
                     best_acc = epoch_acc
                     best_model_weights = deepcopy(model.state_dict())
+                    torch.save(model.state_dict(), "models/" + str(model_name) + "_" + str(num_epochs) + "epochs" + ".pt")
+                    print("Model saved!")
 
     # Timer
     time_elapsed = time.time() - since
@@ -188,7 +195,12 @@ def test_accuracy(data_loaders, model):
         for inputs, labels in data_loaders["test"]:
             inputs = inputs.to(device)
             labels = labels.to(device)
-            preds = model(inputs)
+            outputs = model(inputs)
+            _, preds = torch.max(outputs, 1)
+
+            print(preds.size())
+            print(labels.size())
+
             num_correct += (preds == labels).sum()
             total += labels.size(0)
 
@@ -214,8 +226,8 @@ def main():
                                            transforms.RandomHorizontalFlip(),
                                            transforms.RandomRotation(15),
                                            transforms.ToTensor(),
-                                           # transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5)),
-                                           # transforms.ColorJitter(brightness=.5, hue=.3),
+                                           transforms.GaussianBlur(kernel_size=(5, 9), sigma=(0.1, 5)),
+                                           transforms.ColorJitter(brightness=.5, hue=.3),
                                            normalize])
 
     valid_test_transforms = transforms.Compose([transforms.Resize((256, 256)),
@@ -238,34 +250,38 @@ def main():
     for idx in train_val_indcs:
         train_val_split_labels.append(full_dataset.labels[idx])
 
-    train_indcs, val_indcs, _, _ = train_test_split(range(len(train_val_split)),
-                                                    train_val_split_labels,
-                                                    test_size=0.111,
-                                                    stratify=train_val_split_labels)
+    train_indcs, val_indcs, train_labels, val_labels = train_test_split(range(len(train_val_split)),
+                                                                        train_val_split_labels,
+                                                                        test_size=0.111,
+                                                                        stratify=train_val_split_labels)
 
-    train_split = Subset(full_dataset, train_indcs, train_transforms)  # 0.8
+    # Oversampling training set
+    ros = RandomOverSampler()
+    train_resampled_indcs, _ = ros.fit_resample(np.array(train_indcs).reshape(-1, 1), train_labels)
+
+    train_split = Subset(full_dataset, train_resampled_indcs, train_transforms)  # 0.8
     val_split = Subset(full_dataset, val_indcs, valid_test_transforms)  # 0.1
     test_split = Subset(full_dataset, test_indcs, valid_test_transforms)  # 0.1
 
     # TODO: Code to check the above sequence is creating the proper splits/class distribution
 
     batch_size = args["batchsize"]
-    dataloaders = {"train": DataLoader(train_split, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True),
-                   "val": DataLoader(val_split, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True),
-                   "test": DataLoader(test_split, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)}
+    dataloaders = {
+        "train": DataLoader(train_split, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True),
+        "val": DataLoader(val_split, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True),
+        "test": DataLoader(test_split, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)}
 
     model_name = args["model"]
     model, weights = initialize_model(model_name, num_classes, feature_extract=False)
 
     lr = args["learning_rate"]
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters())
+    optimizer = optim.Adam(model.parameters(), lr=lr)
     scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
 
     num_epochs = args["epochs"]
     best_model, train_losses, train_accs, val_losses, val_accs = \
-        train_model(model, dataloaders, criterion, optimizer, scheduler, num_epochs=num_epochs)
-    torch.save(best_model.state_dict(), "models/" + str(model_name) + "_" + str(num_epochs) + "epochs" + ".pt")
+        train_model(model, model_name, dataloaders, criterion, optimizer, scheduler, num_epochs=num_epochs)
 
     plot_loss_curves(train_losses, train_accs, val_losses, val_accs, model_name)
 

@@ -7,15 +7,19 @@ from skimage import io
 
 from train import initialize_model
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+from PIL import Image
+
+device = torch.device("cpu")
 
 
-def predict(file, model_name="resnet50", k=5):
+def predict(file, model_name="resnet50_100epochs.pt", k=5):
 
     img_transforms = transforms.Compose([transforms.ToTensor(),
                                          transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
 
-    img = io.imread(file)
+    img = Image.open(file)
+    if img.mode != "RGB":  # Convert png to jpg
+        img = img.convert("RGB")
     img = img_transforms(img)
     img = img.to(device)
     img = img.unsqueeze(0)  # Add batch dimension (because single image)
@@ -26,15 +30,18 @@ def predict(file, model_name="resnet50", k=5):
 
     model, _ = initialize_model(model_name[:8], num_classes, feature_extract=True)
     model.load_state_dict(torch.load("models/" + str(model_name), map_location=device))
+    model.to(device)
     model.eval()
 
     with torch.no_grad():
         output = model(img)
         _, preds = torch.topk(output, k)
 
+    print(preds)
     preds = torch.transpose(preds, 0, 1)
     preds = preds.cpu()  # Send tensor to cpu
     preds = pd.DataFrame(preds.numpy(), columns=["Classencoded"])  # Convert to dataframe
+    print(preds)
 
     class_encoded_matches = pd.merge(df, preds, how="inner")
     classname_matches = class_encoded_matches["Classname"].unique()
