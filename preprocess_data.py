@@ -134,14 +134,6 @@ def create_dataloaders(df, batch_size=32):
     # Encode labels (for compatibility with Torch)
     df["Classencoded"] = df["Classname"].factorize()[0]
 
-    df_class_count = df.groupby(by=["Classencoded"]).count()
-    df_class_count = df.sort_values(by=["Classname"])
-
-    # print(f"df length: {len(df)}")
-    # ros = RandomOverSampler()
-    # df_resampled, _ = ros.fit_resample(df, df["Classencoded"])
-    # print(f"df_resampled length: {len(df_resampled)}")
-
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
     train_transforms = transforms.Compose([transforms.Resize((256, 256)),
@@ -177,7 +169,7 @@ def create_dataloaders(df, batch_size=32):
                                                                         test_size=0.111,
                                                                         stratify=train_val_split_labels)
 
-    # Oversampling training set
+    # Oversample all but the majority class in the training set
     ros = RandomOverSampler()
     train_resampled_indcs, _ = ros.fit_resample(np.array(train_indcs).reshape(-1, 1), train_labels)
 

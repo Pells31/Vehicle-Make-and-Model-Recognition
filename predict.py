@@ -14,7 +14,8 @@ device = torch.device("cpu")
 
 def predict(file, model_name="resnet50_100epochs.pt", k=5):
 
-    img_transforms = transforms.Compose([transforms.ToTensor(),
+    img_transforms = transforms.Compose([transforms.Resize((256, 256)),
+                                         transforms.ToTensor(),
                                          transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
 
     img = Image.open(file)
@@ -33,17 +34,18 @@ def predict(file, model_name="resnet50_100epochs.pt", k=5):
     model.to(device)
     model.eval()
 
+    pd.set_option('display.max_rows', None)
+
     with torch.no_grad():
         output = model(img)
         _, preds = torch.topk(output, k)
 
-    print(preds)
     preds = torch.transpose(preds, 0, 1)
     preds = preds.cpu()  # Send tensor to cpu
     preds = pd.DataFrame(preds.numpy(), columns=["Classencoded"])  # Convert to dataframe
-    print(preds)
 
     class_encoded_matches = pd.merge(df, preds, how="inner")
+    class_encoded_matches = pd.merge(preds, class_encoded_matches, how="left", on="Classencoded", sort=False)
     classname_matches = class_encoded_matches["Classname"].unique()
 
     return classname_matches
