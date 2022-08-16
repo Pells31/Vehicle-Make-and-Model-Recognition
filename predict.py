@@ -45,7 +45,7 @@ def predict(file, model_name="resnet50_100epochs.pt", k=5):
     preds = pd.DataFrame(preds.numpy(), columns=["Classencoded"])  # Convert to dataframe
 
     class_encoded_matches = pd.merge(df, preds, how="inner")
-    class_encoded_matches = pd.merge(preds, class_encoded_matches, how="left", on="Classencoded", sort=False)
+    class_encoded_matches = pd.merge(preds, class_encoded_matches, how="left", on="Classencoded", sort=False)  # Preserves ordering
     classname_matches = class_encoded_matches["Classname"].unique()
 
     return classname_matches
