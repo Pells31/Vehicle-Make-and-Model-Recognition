@@ -3,8 +3,6 @@ import torch
 from torchvision import transforms
 import pandas as pd
 
-from skimage import io
-
 from train import initialize_model
 
 from PIL import Image
