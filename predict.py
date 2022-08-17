@@ -2,6 +2,7 @@ import argparse
 import torch
 from torchvision import transforms
 import pandas as pd
+import os
 
 from train import initialize_model
 
@@ -28,7 +29,8 @@ def predict(file, model_name="resnet50_100epochs.pt", k=5):
     num_classes = df["Classname"].nunique()
 
     model, _ = initialize_model(model_name[:8], num_classes, feature_extract=True)
-    model.load_state_dict(torch.load("models/" + str(model_name), map_location=device))
+    path = os.path.dirname(__file__)
+    model.load_state_dict(torch.load(path + "/models/" + str(model_name), map_location=device))
     model.to(device)
     model.eval()
 
