@@ -20,11 +20,11 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 def initialize_model(model_name, num_classes, feature_extract=True):
     if model_name == "resnet152":
-        weights = models.ResNet152_Weights.DEFAULT
+        weights = models.ResNet152_Weights.DEFAULT  # Init with the best available weights
         model = models.resnet152(weights=weights)
 
     elif model_name == "resnet50":
-        weights = models.ResNet50_Weights.DEFAULT  # Init with the best available weights
+        weights = models.ResNet50_Weights.DEFAULT
         model = models.resnet50(weights=weights)
 
     elif model_name == "resnet34":
