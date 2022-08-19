@@ -12,6 +12,62 @@ from imblearn.over_sampling import RandomOverSampler
 from torchvision import transforms
 from torch.utils.data import Dataset, DataLoader, Subset
 
+SIZE = 224
+
+
+def resize(filepath, size=SIZE):
+    img = Image.open(filepath)
+
+    # If greyscale, convert to RGB
+    if img.mode == "L":
+        img = img.convert(mode="RGB")
+
+    # Maintains Aspect Ratio
+    img.thumbnail((SIZE, SIZE), Image.Resampling.LANCZOS)
+    new_width, new_height = img.size
+
+    # Add padding
+    result = Image.new(img.mode, (SIZE, SIZE), 0)
+    if new_height < SIZE:
+        result.paste(img, (0, SIZE - new_height))
+
+    img.close()
+    return result
+
+
+def preprocess_images(dir):
+    count = 0
+    orig_dir_path = "Data/" + dir
+
+    not_saved = []
+
+    for root, dirs, files in os.walk(orig_dir_path, topdown=False):
+        for file in tqdm(files):
+
+            # Only process pictures
+            if os.path.splitext(file)[-1].lower() == ".jpg":
+                orig_pic_path = root + "/" + file
+                result = resize(orig_pic_path)
+
+                # Create directory structure if doesn't exist
+                if not os.path.isdir("Data/Processed/" + root[5:]):
+                    os.makedirs("Data/Processed/" + root[5:])
+
+                # Save image if not all black, else record to not saved list
+                filepath = "Data/Processed/" + root[5:] + "/" + file
+                if result.getbbox():
+                    result.save(filepath)
+                else:
+                    not_saved.append(file)
+
+                result.close()
+                count += 1
+                if count % 10000 == 0:
+                    print(f"\n")
+                    print("Preprocessed " + str(count) + " pictures")
+
+    return not_saved
+
 
 class CarsDataset(Dataset):
     def __init__(self, df, root_dir, transform=None):
@@ -73,7 +129,7 @@ class Subset(Dataset):
         return len(self.indices)
 
 
-def create_stanford_df():
+def create_stanford_df(not_saved_list):
     cars_annos = loadmat("Data/StanfordCars/cars_annos.mat")
 
     annos = []
@@ -98,10 +154,20 @@ def create_stanford_df():
     df_merged = df_merged.drop(["ClassID"], axis=1)
     df_merged["Datasetname"] = "StanfordCars"
 
+    print("Stanford df BEFORE removing not_saved:")
+    print(df_merged.shape[0])
+
+    # Remove not_saved images
+    for not_saved in not_saved_list:
+        df_merged = df_merged[df_merged["Filename"] != not_saved]
+
+    print("Stanford df AFTER removing not_saved:")
+    print(df_merged.shape[0])
+
     return df_merged
 
 
-def create_vmmrdb_df(min_examples=30):
+def create_vmmrdb_df(not_saved_list, min_examples=30):
     data_list = []
 
     print("Iterating over VMMRdb dirs/files")
@@ -118,6 +184,16 @@ def create_vmmrdb_df(min_examples=30):
     df = pd.DataFrame(data_list, columns=["Classname", "Filename", "Classfolder"])
     df["Datasetname"] = "VMMRdb"
     df = df[:-1]
+
+    print("VMMRdb df BEFORE removing not_saved:")
+    print(df.shape[0])
+
+    # Remove not_saved images
+    for not_saved in not_saved_list:
+        df = df[df["Filename"] != not_saved]
+
+    print("VMMRdb df AFTER removing not_saved:")
+    print(df.shape[0])
 
     return df
 
@@ -136,7 +212,7 @@ def create_dataloaders(df, batch_size=32):
 
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
 
-    train_transforms = transforms.Compose([transforms.Resize((256, 256)),
+    train_transforms = transforms.Compose([transforms.Resize((224, 224)),
                                            transforms.RandomHorizontalFlip(),
                                            transforms.RandomRotation(15),
                                            transforms.ToTensor(),
@@ -144,7 +220,7 @@ def create_dataloaders(df, batch_size=32):
                                            transforms.ColorJitter(brightness=.5, hue=.3),
                                            normalize])
 
-    valid_test_transforms = transforms.Compose([transforms.Resize((256, 256)),
+    valid_test_transforms = transforms.Compose([transforms.Resize((224, 224)),
                                                 transforms.ToTensor(),
                                                 normalize])
 

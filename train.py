@@ -12,8 +12,8 @@ from copy import deepcopy
 
 from preprocess_data import create_stanford_df, create_vmmrdb_df, create_unified_df, create_dataloaders
 from utils import plot_loss_curves
+from preprocess_data import preprocess_images
 
-INPUT_SIZE = 224
 cudnn.benchmark = True
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -129,8 +129,13 @@ def main():
     parser.add_argument("-lr", "--learning_rate", type=float, help="learning rate")
     args = vars(parser.parse_args())
 
-    df_stanford = create_stanford_df()
-    df_vmmrdb = create_vmmrdb_df(min_examples=100)
+    dataset = "StanfordCars"
+    not_saved_stanford = preprocess_images(dataset)
+    dataset = "VMMRdb"
+    not_saved_vmmr = preprocess_images(dataset)
+
+    df_stanford = create_stanford_df(not_saved_stanford)
+    df_vmmrdb = create_vmmrdb_df(not_saved_vmmr, min_examples=100)
     df, num_classes = create_unified_df(df_stanford, df_vmmrdb)
     print(f'df created!')
     print(f'num_classes: {num_classes}')

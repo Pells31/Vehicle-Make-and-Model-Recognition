@@ -52,3 +52,4 @@ and Verification", In Computer Vision and Pattern Recognition (CVPR), 2015.
 - [CS231n Transfer Learning Notes](https://cs231n.github.io/transfer-learning/)
 - [Pytorch Data Loading Tutorial](https://pytorch.org/tutorials/beginner/data_loading_tutorial.html)
 - [Streamlit webapp example](https://github.com/Joshmantova/Eagle-Vision)
+- [The Car Connection Picture Dataset](https://github.com/nicolas-gervais/predicting-car-price-from-scraped-data/tree/master/picture-scraper)
