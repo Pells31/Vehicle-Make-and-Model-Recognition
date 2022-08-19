@@ -1,5 +1,7 @@
 # Vehicle-Make-and-Model-Recognition (VMMR)
 
+![VMMR Website Demo - Camaro](./imgs/vmmr_website_demo_camaro.png)
+
 ## Data
 Data used here is freely available from the following sources:
 - [VMMRdb](https://www.dropbox.com/s/uwa7c5uz7cac7cw/VMMRdb.zip?dl=0)
