@@ -5,9 +5,7 @@
 ## Data
 Data used here is freely available from the following sources:
 - [VMMRdb](https://www.dropbox.com/s/uwa7c5uz7cac7cw/VMMRdb.zip?dl=0)
-- [Stanford Cars (Training)](http://ai.stanford.edu/~jkrause/car196/cars_train.tgz)
-- [Stanford Cars (Test)](http://ai.stanford.edu/~jkrause/car196/cars_test.tgz)
-- [Stanford Cars (Labels and Bounding Boxes)](http://ai.stanford.edu/~jkrause/cars/car_devkit.tgz)
+- [Stanford Cars](https://www.kaggle.com/datasets/jessicali9530/stanford-cars-dataset)
 
 ## Dependencies
 - Numpy

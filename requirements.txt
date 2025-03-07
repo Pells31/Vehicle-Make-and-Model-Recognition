@@ -10,3 +10,4 @@ scipy==1.7.3
 streamlit==1.11.0
 torchvision==0.13.1
 tqdm==4.64.0
+altair<5
